@@ -8,6 +8,7 @@ java及相关
 1. [使用开放 Java 生态系统开发现代应用程序](https://www.ibm.com/developerworks/cn/java/)
 1. [Java Goal(Set your goal today!)](https://javagoal.com/)
 1. [Instance Of Java](http://www.instanceofjava.com/)
+1. [java learn ]https://www.java67.com/)
 1. [javarevisited.blogspot](https://javarevisited.blogspot.com)
 1. [JavaMadeSoEasy.com (JMSE) ](https://www.javamadesoeasy.com/)
 1. [Core java](https://www.codejava.net/)
