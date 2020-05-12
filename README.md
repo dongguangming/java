@@ -4,8 +4,9 @@ java及相关
 #学习java网站链接
 1. [Java Is the Language of Possibilities](https://www.oracle.com/java/technologies/)
 1. [The Java™ Tutorials](https://docs.oracle.com/javase/tutorial/)
-4. [Java Tutorial](https://www.w3spoint.com/java-tutorial)
+4. [Java Development, Better and Faster](https://developer.oracle.com/java/)
 1. [使用开放 Java 生态系统开发现代应用程序](https://www.ibm.com/developerworks/cn/java/)
+4. [Java Tutorial](https://www.w3spoint.com/java-tutorial)
 1. [Java Goal(Set your goal today!)](https://javagoal.com/)
 1. [Instance Of Java](http://www.instanceofjava.com/)
 1. [java learn ]https://www.java67.com/)
@@ -23,7 +24,6 @@ java及相关
 4. [A programming skills sharing group](https://programmer.group/)
 4. [Core Java Tutorials](https://www.concretepage.com/java/)
 4. [Java 9 Resources – Talks, Articles, Repos, Blogs, Books And Courses](https://blog.codefx.org/java/java-9-resources-talks-articles-blogs-books-courses/)
-4. []()
 4. []()
 4. []()
 4. []()
