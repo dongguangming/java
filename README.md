@@ -24,7 +24,7 @@ java及相关
 4. [A programming skills sharing group](https://programmer.group/)
 4. [Core Java Tutorials](https://www.concretepage.com/java/)
 4. [Java 9 Resources – Talks, Articles, Repos, Blogs, Books And Courses](https://blog.codefx.org/java/java-9-resources-talks-articles-blogs-books-courses/)
-4. []()
+4. [java magazine blog](https://blogs.oracle.com/javamagazine/)
 4. []()
 4. []()
 4. [Java Performance Tuning](https://www.javaperformancetuning.com/)
