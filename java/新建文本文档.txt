@@ -1,0 +1,3 @@
+http://www.tupwk.com.cn/downpage/search.asp
+http://ifeve.com/a-scalable-nonblocking-io-server/
+http://tutorials.jenkov.com/java-nio/selectors.html

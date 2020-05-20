@@ -1,0 +1,868 @@
+BeanNameAware's setBeanName 
+BeanClassLoaderAware's setBeanClassLoader 
+BeanFactoryAware's setBeanFactory 
+EnvironmentAware's setEnvironment 
+EmbeddedValueResolverAware's setEmbeddedValueResolver 
+ResourceLoaderAware's setResourceLoader (only applicable when running in an application context) 
+ApplicationEventPublisherAware's setApplicationEventPublisher (only applicable when running in an application context) 
+MessageSourceAware's setMessageSource (only applicable when running in an application context) 
+ApplicationContextAware's setApplicationContext (only applicable when running in an application context) 
+ServletContextAware's setServletContext (only applicable when running in a web application context) 
+postProcessBeforeInitialization methods of BeanPostProcessors 
+InitializingBean's afterPropertiesSet 
+a custom init-method definition 
+postProcessAfterInitialization methods of BeanPostProcessors 
+On shutdown of a bean factory, the following lifecycle methods apply: 
+
+
+DefaultListableBeanFactory
+-------------------------------】
+BeanPostProcessor接口是最顶层的接口
+// 初始化之前的操作
+    Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException;
+    // 初始化之后的操作
+    Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException;
+    
+InstantiationAwareBeanPostProcessor接口继承自BeanPostProcessor接口
+// postProcessBeforeInstantiation方法的作用在目标对象被实例化之前调用的方法，可以返回目标实例的一个代理用来代替目标实例
+// beanClass参数表示目标对象的类型，beanName是目标实例在Spring容器中的name
+// 返回值类型是Object，如果返回的是非null对象，接下来除了postProcessAfterInitialization方法会被执行以外，其它bean构造的那些方法都不再执行。否则那些过程以及postProcessAfterInitialization方法都会执行
+Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException;
+
+// postProcessAfterInstantiation方法的作用在目标对象被实例化之后并且在属性值被populate之前调用
+// bean参数是目标实例(这个时候目标对象已经被实例化但是该实例的属性还没有被设置)，beanName是目标实例在Spring容器中的name
+// 返回值是boolean类型，如果返回true，目标实例内部的返回值会被populate，否则populate这个过程会被忽视
+boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException;
+
+// postProcessPropertyValues方法的作用在属性中被设置到目标实例之前调用，可以修改属性的设置
+// pvs参数表示参数属性值(从BeanDefinition中获取)，pds代表参数的描述信息(比如参数名，类型等描述信息)，bean参数是目标实例，beanName是目标实例在Spring容器中的name
+// 返回值是PropertyValues，可以使用一个全新的PropertyValues代替原先的PropertyValues用来覆盖属性设置或者直接在参数pvs上修改。如果返回值是null，那么会忽略属性设置这个过程(所有属性不论使用什么注解，最后都是null)
+PropertyValues postProcessPropertyValues(
+    PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName)
+    throws BeansException;
+    
+SmartInstantiationAwareBeanPostProcessor接口继承InstantiationAwareBeanPostProcessor接口
+// 预测Bean的类型，返回第一个预测成功的Class类型，如果不能预测返回null
+Class<?> predictBeanType(Class<?> beanClass, String beanName) throws BeansException;
+
+// 选择合适的构造器，比如目标对象有多个构造器，在这里可以进行一些定制化，选择合适的构造器
+// beanClass参数表示目标实例的类型，beanName是目标实例在Spring容器中的name
+// 返回值是个构造器数组，如果返回null，会执行下一个PostProcessor的determineCandidateConstructors方法；否则选取该PostProcessor选择的构造器
+Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, String beanName) throws BeansException;
+
+// 获得提前暴露的bean引用。主要用于解决循环引用的问题
+// 只有单例对象才会调用此方法
+Object getEarlyBeanReference(Object bean, String beanName) throws BeansException;
+
+***********************************************
+postProcessBeforeInitialization是指bean在初始化之前需要调用的方法
+postProcessAfterInitialization是指bean在初始化之后需要调用的方法
+postProcessBeforeInitialization和postProcessAfterInitialization方法被调用的时候。这个时候bean已经被实例化，并且所有该注入的属性都已经被注入，是一个完整的bean
+这2个方法的返回值可以是原先生成的实例bean，或者使用wrapper包装这个实例
+
+SmartInstantiationAwareBeanPostProcessor接口继承InstantiationAwareBeanPostProcessor接口，它内部提供了3个方法，再加上父接口的5个方法，所以实现这个接口需要实现8个方法。SmartInstantiationAwareBeanPostProcessor接口的主要作用也是在于目标对象的实例化过程中需要处理的事情。它是InstantiationAwareBeanPostProcessor接口的一个扩展。主要在Spring框架内部使用
+predictBeanType方法用于预测Bean的类型，返回第一个预测成功的Class类型，如果不能预测返回null。主要在于BeanDefinition无法确定Bean类型的时候调用该方法来确定类型
+determineCandidateConstructors方法用于选择合适的构造器，比如类有多个构造器，可以实现这个方法选择合适的构造器并用于实例化对象。该方法在postProcessBeforeInstantiation方法和postProcessAfterInstantiation方法之间调用，如果postProcessBeforeInstantiation方法返回了一个新的实例代替了原本该生成的实例，那么该方法会被忽略
+getEarlyBeanReference主要用于解决循环引用问题。比如ReferenceA实例内部有ReferenceB的引用，ReferenceB实例内部有ReferenceA的引用。首先先实例化ReferenceA，实例化完成之后提前把这个bean暴露在ObjectFactory中，然后populate属性，这个时候发现需要ReferenceB。然后去实例化ReferenceB，在实例化ReferenceB的时候它需要ReferenceA的实例才能继续，这个时候就会去ObjectFactory中找出了ReferenceA实例，ReferenceB顺利实例化。ReferenceB实例化之后，ReferenceA的populate属性过程也成功完成，注入了ReferenceB实例。提前把这个bean暴露在ObjectFactory中，这个ObjectFactory获取的实例就是通过getEarlyBeanReference方法得到的
+
+
+InstantiationAwareBeanPostProcessor接口继承BeanPostProcessor接口，它内部提供了3个方法，再加上BeanPostProcessor接口内部的2个方法，所以实现这个接口需要实现5个方法。InstantiationAwareBeanPostProcessor接口的主要作用在于目标对象的实例化过程中需要处理的事情，包括实例化对象的前后过程以及实例的属性设置
+postProcessBeforeInstantiation方法是最先执行的方法，它在目标对象实例化之前调用，该方法的返回值类型是Object，我们可以返回任何类型的值。由于这个时候目标对象还未实例化，所以这个返回值可以用来代替原本该生成的目标对象的实例(比如代理对象)。如果该方法的返回值代替原本该生成的目标对象，后续只有postProcessAfterInitialization方法会调用，其它方法不再调用；否则按照正常的流程走
+postProcessAfterInstantiation方法在目标对象实例化之后调用，这个时候对象已经被实例化，但是该实例的属性还未被设置，都是null。如果该方法返回false，会忽略属性值的设置；如果返回true，会按照正常流程设置属性值
+postProcessPropertyValues方法对属性值进行修改(这个时候属性值还未被设置，但是我们可以修改原本该设置进去的属性值)。如果postProcessAfterInstantiation方法返回false，该方法不会被调用。可以在该方法内对属性值进行修改
+父接口BeanPostProcessor的2个方法postProcessBeforeInitialization和postProcessAfterInitialization都是在目标对象被实例化之后，并且属性也被设置之后调用的
+Instantiation表示实例化，Initialization表示初始化。实例化的意思在对象还未生成，初始化的意思在对象已经生成
+***********************************************
+
+org.springframework.beans.factory.config.PropertyPlaceholderConfigurer
+<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+	<property name="location" value="classpath:conf/mysql.properties" />
+</bean>
+<!-- 数据库连接配置信息 -->
+<bean id="mysql" class="spring.jdbc.MysqlConnectionManager">
+	<property name="driver" value="${driver}" />
+	<property name="url" value="${url}" />
+	<property name="username" value="${username}" />
+	<property name="password" value="${password}" />
+</bean>
+
+#mysql.properties文件
+driver=com.mysql.jdbc.Driver
+url=jdbc:mysql://192.168.8.200:3306/bdrackdemo?useUnicode=true&characterEncoding=utf8&autoReconnect=true
+username=root
+password=cstorfs
+
+java.lang.Object
+org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+All Implemented Interfaces:
+Serializable, Aware, BeanFactoryAware, BeanPostProcessor, DestructionAwareBeanPostProcessor, InstantiationAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor, Ordered, PriorityOrdered 
+ @PostConstruct and @PreDestroy @Resource
+https://docs.spring.io/spring-framework/docs/5.1.6.RELEASE/javadoc-api/org/springframework/context/annotation/CommonAnnotationBeanPostProcessor.html
+
+java.lang.Object
+org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessorAdapter
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+All Implemented Interfaces:
+Aware, BeanFactoryAware, BeanPostProcessor, InstantiationAwareBeanPostProcessor, SmartInstantiationAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor, Ordered, PriorityOrdered
+@Required
+https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/beans/factory/annotation/RequiredAnnotationBeanPostProcessor.html
+
+java.lang.Object
+org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessorAdapter
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+All Implemented Interfaces:
+Aware, BeanFactoryAware, BeanPostProcessor, InstantiationAwareBeanPostProcessor, SmartInstantiationAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor, Ordered, PriorityOrdered 
+@@@Autowired and @Value 
+https://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/beans/factory/annotation/AutowiredAnnotationBeanPostProcessor.html
+
+java.lang.Object
+org.springframework.context.annotation.ConfigurationClassPostProcessor
+All Implemented Interfaces:
+Aware, BeanClassLoaderAware, BeanFactoryPostProcessor, BeanDefinitionRegistryPostProcessor, EnvironmentAware, ResourceLoaderAware, Ordered, PriorityOrdered 
+@Configuration
+https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/context/annotation/ConfigurationClassPostProcessor.html
+
+
+
+
+ApplicationContextAwareProcessor
+
+AnnotationAwareAspectJAutoProxyCreator
+
+InstantiationAwareBeanPostProcessor
+
+AspectJAwareAdvisorAutoProxyCreator Spring启动时的beanPostProcessor，bean生命周期中经常可以看到beanPostProcessor在起作用，AOP也是基于IOC来实现的。
+例化ApplicationContext中加载配置文件过程
+
+refresh- obtainFreshBeanFactory- refreshBeanFactory- AbstractRefreshableApplicationContext.loadBeanDefinitions(beanFactory)- …- XmlBeanDefinitionReader.loadBeanDefinitions(Resource resource)- DefaultBeanDefinitionDocumentReader.parseBeanDefinitions
+
+AspectJAwareAdvisorAutoProxyCreator的postProcessAfterInitialization方法再其父类AbstractAutoProxyCreator中实现，其会对已经实例化的bean进行wrap。
+
+internalConfigurationAnnotationProcessor
+ConfigurationClassPostProcessor
+IoC容器启动流程中， refresh()
+invokeBeanFactoryPostProcessors
+BeanDefinitionRegistryPostProcessor继承了BeanFactoryPostProcessor,#postProcessBeanDefinitionRegistry()ConfigurationClassPostProcessor
+BeanFactoryPostProcessor#postProcessBeanFactory(ConfigurableListableBeanFactory)
+
+执行逻辑总结：
+	1、先执行BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry方法，其中BeanDefinitionRegistryPostProcessor执行优先级如下：
+		a、addBeanFactoryPostProcessor()传入到优先级最高，因为不需要实例化，直接可以获取到对象进行执行；
+	 	b、然后从IoC容器中获取PriorityOrdered接口的BeanDefinitionRegistryPostProcessor，实例化并排序后执行postProcessBeanDefinitionRegistry方法
+	 	c、然后从IoC容器中获取Ordered接口的BeanDefinitionRegistryPostProcessor，实例化并排序后执行postProcessBeanDefinitionRegistry方法
+	 	d、然后从IoC容器中获取剩余的BeanDefinitionRegistryPostProcessor，实例化后执行postProcessBeanDefinitionRegistry方法；注意这个处理步骤存在一个循环，主要是存在执行前面的BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry方法时，存在可能会向IoC容器中注册新的BeanDefinitionRegistryPostProcessor，通过循环保证都会被执行；
+	2、然后执行BeanDefinitionRegistryPostProcessor#postProcessBeanFactory方法，执行顺序参照步骤1中执行顺序；
+	3、最后才会执行BeanFactoryPostProcessor#postProcessBeanFactory，执行优先级和BeanDefinitionRegistryPostProcessor一致：
+	 	a、addBeanFactoryPostProcessor()传入到优先级最高，因为不需要实例化，直接可以获取到对象进行执行；
+	 	b、然后从IoC容器中获取PriorityOrdered接口的BeanFactoryPostProcessor，实例化并排序后执行postProcessBeanFactory方法
+	 	c、然后从IoC容器中获取Ordered接口的BeanFactoryPostProcessor，实例化并排序后执行postProcessBeanFactory方法
+	 	d、然后从IoC容器中获取剩余的BeanFactoryPostProcessor，实例化后执行postProcessBeanFactory方法
+
+总结： 
+1、不同方法执行优先级：`BeanDefinitionRegistryPostProcessor#postProcessBeanDefinitionRegistry` > `BeanDefinitionRegistryPostProcessor#postProcessBeanFactory` > `BeanFactoryPostProcessor#postProcessBeanFactory`；
+2、同方法执行优先级：`addBeanFactoryPostProcessor` > `PriorityOrdered` > `Ordered` > 非排序
+Exception in thread "main" org.springframework.beans.factory.BeanCreationException: Error creating bean with name 'appProperties' defined in spring.config.DatabaseConfiguration: Bean instantiation via factory method failed; nested exception is org.springframework.beans.BeanInstantiationException: Failed to instantiate [spring.bean.ApplicationProperties]: Factory method 'appProperties' threw exception; nested exception is java.lang.NullPointerException
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:656)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiateUsingFactoryMethod(ConstructorResolver.java:484)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.instantiateUsingFactoryMethod(AbstractAutowireCapableBeanFactory.java:1338)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(AbstractAutowireCapableBeanFactory.java:1177)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(AbstractAutowireCapableBeanFactory.java:557)
+	at org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBean(AbstractAutowireCapableBeanFactory.java:517)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.lambda$doGetBean$0(AbstractBeanFactory.java:323)
+	at org.springframework.beans.factory.support.AbstractBeanFactory$$Lambda$31/1418385211.getObject(Unknown Source)
+	at org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(DefaultSingletonBeanRegistry.java:222)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean(AbstractBeanFactory.java:321)
+	at org.springframework.beans.factory.support.AbstractBeanFactory.getBean(AbstractBeanFactory.java:202)
+	at org.springframework.beans.factory.support.DefaultListableBeanFactory.preInstantiateSingletons(DefaultListableBeanFactory.java:879)
+	at org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization(AbstractApplicationContext.java:878)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:550)
+	at org.springframework.context.annotation.AnnotationConfigApplicationContext.<init>(AnnotationConfigApplicationContext.java:89)
+	at spring.test.DatabaseBeanDefinitionRegistryPostProcessorExample.main(DatabaseBeanDefinitionRegistryPostProcessorExample.java:19)
+Caused by: org.springframework.beans.BeanInstantiationException: Failed to instantiate [spring.bean.ApplicationProperties]: Factory method 'appProperties' threw exception; nested exception is java.lang.NullPointerException
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:185)
+	at org.springframework.beans.factory.support.ConstructorResolver.instantiate(ConstructorResolver.java:651)
+	... 15 more
+Caused by: java.lang.NullPointerException
+	at spring.config.DatabaseConfiguration.appProperties(DatabaseConfiguration.java:23)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:483)
+	at org.springframework.beans.factory.support.SimpleInstantiationStrategy.instantiate(SimpleInstantiationStrategy.java:154)
+	... 16 more
+	
+	Exception in thread "main" java.lang.IllegalStateException: app.connection.port is not found
+	at spring.config.RedisDataSourceProperties.getProperty(RedisDataSourceProperties.java:101)
+	at spring.config.RedisDataSourceProperties.getProperty(RedisDataSourceProperties.java:95)
+	at spring.config.RedisDataSourceProperties.<init>(RedisDataSourceProperties.java:28)
+	at spring.bean.RedisBeanDefinitionRegistryPostProcessor.parseProperties(RedisBeanDefinitionRegistryPostProcessor.java:100)
+	at spring.bean.RedisBeanDefinitionRegistryPostProcessor.createRedisDatabaseBeans(RedisBeanDefinitionRegistryPostProcessor.java:109)
+	at spring.bean.RedisBeanDefinitionRegistryPostProcessor.postProcessBeanDefinitionRegistry(RedisBeanDefinitionRegistryPostProcessor.java:62)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanDefinitionRegistryPostProcessors(PostProcessorRegistrationDelegate.java:275)
+	at org.springframework.context.support.PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(PostProcessorRegistrationDelegate.java:125)
+	at org.springframework.context.support.AbstractApplicationContext.invokeBeanFactoryPostProcessors(AbstractApplicationContext.java:706)
+	at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:532)
+	at org.springframework.context.support.ClassPathXmlApplicationContext.<init>(ClassPathXmlApplicationContext.java:144)
+	at org.springframework.context.support.ClassPathXmlApplicationContext.<init>(ClassPathXmlApplicationContext.java:85)
+	at spring.test.TestSpringBeanLifecycleApp.testSpringBeanLifecycle2(TestSpringBeanLifecycleApp.java:58)
+	at spring.test.TestSpringBeanLifecycleApp.main(TestSpringBeanLifecycleApp.java:18)
+	
+	
+	context  beanFactory bean 
+	
+	
+		int count = registry.getBeanDefinitionCount();
+		String[] beanNames = registry.getBeanDefinitionNames();
+		System.out.println("Enter BeanDefinitionRegistryPostProcessor 111111111111: "+count);
+    System.out.println("execute postProcessBeanDefinitio.Registry() 1111111111111");
+		System.out.println("BeanDefinitionRegistryPostProcessor postProcessBeanDefinitionRegistry阶段总共："+count+" 个Beans");
+		System.out.println(Arrays.asList(beanNames));
+		
+			int count = beanFactory.getBeanDefinitionCount();
+			String[] beanNames = beanFactory.getBeanDefinitionNames();
+			System.out.println("BeanDefinitionRegistryPostProcessor postProcessBeanFactory阶段总共："+count+" 个Beans");
+			System.out.println(Arrays.asList(beanNames));
+
+
+ System.out.println("Execute BeanFactoryPostProcessor  postProcessBeanFactory() 444444444444");
+	      int count = beanFactory.getBeanDefinitionCount();
+		String[] beanNames = beanFactory.getBeanDefinitionNames();
+			System.out.println("BeanFactoryPostProcessor postProcessBeanFactory阶段总共："+count+" 个Beans");
+			System.out.println(Arrays.asList(beanNames));
+			
+			
+			//遍历IoC中BeanDefinition
+	      Arrays.stream(beanNames)
+	        .forEach(x -> enhancer(beanFactory.getBeanDefinition(x)));
+	        
+			[org.springframework.context.annotation.internalConfigurationAnnotationProcessor, 
+			org.springframework.context.annotation.internalAutowiredAnnotationProcessor, 
+			org.springframework.context.annotation.internalCommonAnnotationProcessor, 
+			org.springframework.context.event.internalEventListenerProcessor, 
+			org.springframework.context.event.internalEventListenerFactory, 
+			redisDatabaseConfiguration, 
+			dbConfigBean, 
+			redisConfigBeanFactory,
+			 datasource_redis, 
+			 repository_redis]
+
+spring的bean容器相关的注解有：@Required， @Autowired, @PostConstruct, @PreDestory。还有Spring3.0开始支持的JSR-330标准javax.inject.*中的注解(@Inject, @Named, @Qualifier, @Provider, @Scope, @Singleton).
+
+springmvc相关的注解有：@Controller，@RequestMapping，@RequestParam， @ResponseBody等等。
+
+观察者模式，命令模式
+工厂模式，责任链模式，代理模式，适配器模式，构建者模式，门面设计模式，
+装饰器模式，模板，单例模式，迭代器模式，组合模式
+
+Builder模式 : 例如 SqlSessionFactoryBuilder、XMLConfigBuilder、XMLMapperBuilder、XMLStatementBuilder、CacheBuilder；
+工厂模式 : 例如SqlSessionFactory、ObjectFactory、MapperProxyFactory；
+单例模式 :例如ErrorContext和LogFactory；
+代理模式 :Mybatis实现的核心，比如MapperProxy、ConnectionLogger，用的jdk的动态代理；还有executor.loader包使用了cglib或者javassist达到延迟加载的效果；
+组合模式 :例如SqlNode和各个子类ChooseSqlNode等；
+模板方法模式 : 例如BaseExecutor和SimpleExecutor，还有BaseTypeHandler和所有的子类例如IntegerTypeHandler；
+适配器模式 : 例如Log的Mybatis接口和它对jdbc、log4j等各种日志框架的适配实现；
+装饰者模式 : 例如cache包中的cache.decorators子包中等各个装饰者的实现；
+迭代器模式 : 例如迭代器模式PropertyTokenizer；
+
+一、 Spring 中常见的设计模式
+
+工厂模式 ： BeanFactory
+
+装饰器模式： BeanWrapper
+
+代理模式： AopProxy
+
+单例模式： ApplicationContext
+
+委派模式： DispatcherServlet
+
+策略模式: HandlerMapping
+
+适配器模式： HandlerApdapter
+
+模板方法模式： JdbcTemplate
+
+观察者模式： ContextLoaderListener
+
+二、Spring 的四大模块及典型的设计模式
+
+　　1、Spring IOC   工厂模式、单例模式、装饰器模式
+
+　　2、Spring AOP  代理模式、观察者模式
+
+　　3、Spring MVC  委派模式、适配器模式
+
+　　4、Spring JDBC 模板方法模式
+
+
+
+org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
+org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
+
+
+org.springframework.beans.factory.config.SingletonBeanRegistry
+
+	/** Cache of singleton objects: bean name to bean instance. */
+	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
+
+	/** Cache of singleton factories: bean name to ObjectFactory. */
+	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
+
+	/** Cache of early singleton objects: bean name to bean instance. */
+	private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
+
+	/** Set of registered singletons, containing the bean names in registration order. */
+	private final Set<String> registeredSingletons = new LinkedHashSet<>(256);
+
+	/** Names of beans that are currently in creation. */
+	private final Set<String> singletonsCurrentlyInCreation =
+			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
+
+	/** Names of beans currently excluded from in creation checks. */
+	private final Set<String> inCreationCheckExclusions =
+			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
+	
+	
+	
+	
+	## Bean creation process
+
+st => start: springBoot main run method
+ e => end: Bean created
+op1=>operation: SpringApplication.refreshContext(context)
+op2=>operation: SpringApplication.refresh(context)
+op3=>operation: EmbeddedWebApplicationContext.refresh()（super.refesh()）
+op4=>operation: AbstractApplicationContext.refresh() 
+// Instantiate all remaining (non-lazy-init) singletons.
+//finishBeanFactoryInitialization(beanFactory);
+op5=>operation: AbstractApplicationContext.finishBeanFactoryInitialization()
+// Instantiate all remaining (non-lazy-init) singletons.
+//beanFactory.preInstantiateSingletons();
+op6=>operation: DefaultListableBeanFactory.preInstantiateSingletons()
+//getBean(beanName);
+op7=>operation: AbstractBeanFactory.getBean(String name)
+//return doGetBean(name, null, null, false);
+op8=>operation: AbstractBeanFactory.doGetBean()
+//sharedInstance = getSingleton(beanName, new ObjectFactory<Object>() 
+op9=>operation: DefaultSingletonBeanRegistry.getSingleton(String beanName, ObjectFactory<?> singletonFactory)
+//singletonObject = singletonFactory.getObject();
+op10=>operation: AbstractBeanFactory.return createBean(beanName, mbd, args);
+op11=>operation: AbstractAutowireCapableBeanFactory.doCreateBean(beanName, mbdToUse, args);
+op12=>operation: AbstractAutowireCapableBeanFactory.createBeanInstance(beanName, mbd, args);
+op13=>operation: AbstractAutowireCapableBeanFactory. instantiateUsingFactoryMethod(beanName, mbd, args)
+op14=>operation: ConstructorResolver.this.beanFactory.getInstantiationStrategy().instantiate(
+						mbd, beanName, this.beanFactory, factoryBean, factoryMethodToUse, argsToUse);
+op15=>operation: SimpleInstantiationStrategy.factoryMethod.invoke(factoryBean, args);		
+ cond => condition: whether to buy and logged Make Fei like?
+
+st->op1->op2->op3->op4->op5->op6->op7->op8->op9->op10->op11->op12->op13->op14->op15->e
+
+
+node element name: context:component-scan
+property-override===org.springframework.context.config.PropertyOverrideBeanDefinitionParser@59402b8f
+annotation-config===org.springframework.context.annotation.AnnotationConfigBeanDefinitionParser@7188af83
+mbean-server===org.springframework.context.config.MBeanServerBeanDefinitionParser@6be968ce
+component-scan===org.springframework.context.annotation.ComponentScanBeanDefinitionParser@7c37508a
+load-time-weaver===org.springframework.context.config.LoadTimeWeaverBeanDefinitionParser@247310d0
+property-placeholder===org.springframework.context.config.PropertyPlaceholderBeanDefinitionParser@1033576a
+spring-configured===org.springframework.context.config.SpringConfiguredBeanDefinitionParser@303cf2ba
+mbean-export===org.springframework.context.config.MBeanExportBeanDefinitionParser@76494737
+node element name: bean
+node element name: aop:config
+aspectj-autoproxy===org.springframework.aop.config.AspectJAutoProxyBeanDefinitionParser@5e17553a
+spring-configured===org.springframework.aop.config.SpringConfiguredBeanDefinitionParser@3eb91815
+config===org.springframework.aop.config.ConfigBeanDefinitionParser@56dc1551
+标签名： aspect
+aspect id: logAspect, aspect ref：logInterceptor
+已注册的bean定义： [calculator, logInterceptor, org.springframework.context.annotation.internalConfigurationAnnotationProcessor, org.springframework.context.annotation.internalAutowiredAnnotationProcessor, org.springframework.context.annotation.internalRequiredAnnotationProcessor, org.springframework.context.annotation.internalCommonAnnotationProcessor, org.springframework.context.event.internalEventListenerProcessor, org.springframework.context.event.internalEventListenerFactory, org.springframework.aop.config.internalAutoProxyCreator]
+pointcut id:logPointCut, expression表达式：execution(* spring.aop.CalculatorImp.*(..))
+已注册的bean定义： [calculator, logInterceptor, org.springframework.context.annotation.internalConfigurationAnnotationProcessor, org.springframework.context.annotation.internalAutowiredAnnotationProcessor, org.springframework.context.annotation.internalRequiredAnnotationProcessor, org.springframework.context.annotation.internalCommonAnnotationProcessor, org.springframework.context.event.internalEventListenerProcessor, org.springframework.context.event.internalEventListenerFactory, org.springframework.aop.config.internalAutoProxyCreator, org.springframework.aop.aspectj.AspectJPointcutAdvisor#0, org.springframework.aop.aspectj.AspectJPointcutAdvisor#1, logPointCut]
+已完成注册的bean定义： [calculator, logInterceptor, org.springframework.context.annotation.internalConfigurationAnnotationProcessor, org.springframework.context.annotation.internalAutowiredAnnotationProcessor, org.springframework.context.annotation.internalRequiredAnnotationProcessor, org.springframework.context.annotation.internalCommonAnnotationProcessor, org.springframework.context.event.internalEventListenerProcessor, org.springframework.context.event.internalEventListenerFactory, org.springframework.aop.config.internalAutoProxyCreator, org.springframework.aop.aspectj.AspectJPointcutAdvisor#0, org.springframework.aop.aspectj.AspectJPointcutAdvisor#1, logPointCut]
+spring.aop.CalculatorImp
+spring.aop.LogInterceptor
+org.springframework.context.annotation.ConfigurationClassPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.context.event.EventListenerMethodProcessor
+org.springframework.context.event.DefaultEventListenerFactory
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJExpressionPointcut
+prepareBeanFactory 已注册12个bean定义： [calculator, logInterceptor, org.springframework.context.annotation.internalConfigurationAnnotationProcessor, org.springframework.context.annotation.internalAutowiredAnnotationProcessor, org.springframework.context.annotation.internalRequiredAnnotationProcessor, org.springframework.context.annotation.internalCommonAnnotationProcessor, org.springframework.context.event.internalEventListenerProcessor, org.springframework.context.event.internalEventListenerFactory, org.springframework.aop.config.internalAutoProxyCreator, org.springframework.aop.aspectj.AspectJPointcutAdvisor#0, org.springframework.aop.aspectj.AspectJPointcutAdvisor#1, logPointCut]
+spring.aop.CalculatorImp
+spring.aop.LogInterceptor
+org.springframework.context.annotation.ConfigurationClassPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.context.event.EventListenerMethodProcessor
+org.springframework.context.event.DefaultEventListenerFactory
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJExpressionPointcut
+environment
+systemProperties
+systemEnvironment
+postProcessBeanFactory 已注册12个bean定义： [calculator, logInterceptor, org.springframework.context.annotation.internalConfigurationAnnotationProcessor, org.springframework.context.annotation.internalAutowiredAnnotationProcessor, org.springframework.context.annotation.internalRequiredAnnotationProcessor, org.springframework.context.annotation.internalCommonAnnotationProcessor, org.springframework.context.event.internalEventListenerProcessor, org.springframework.context.event.internalEventListenerFactory, org.springframework.aop.config.internalAutoProxyCreator, org.springframework.aop.aspectj.AspectJPointcutAdvisor#0, org.springframework.aop.aspectj.AspectJPointcutAdvisor#1, logPointCut]
+spring.aop.CalculatorImp
+spring.aop.LogInterceptor
+org.springframework.context.annotation.ConfigurationClassPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.context.event.EventListenerMethodProcessor
+org.springframework.context.event.DefaultEventListenerFactory
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJExpressionPointcut
+environment
+systemProperties
+systemEnvironment
+org.springframework.beans.factory.support.DefaultListableBeanFactory@3ddc6915: defining beans [calculator,logInterceptor,org.springframework.context.annotation.internalConfigurationAnnotationProcessor,org.springframework.context.annotation.internalAutowiredAnnotationProcessor,org.springframework.context.annotation.internalRequiredAnnotationProcessor,org.springframework.context.annotation.internalCommonAnnotationProcessor,org.springframework.context.event.internalEventListenerProcessor,org.springframework.context.event.internalEventListenerFactory,org.springframework.aop.config.internalAutoProxyCreator,org.springframework.aop.aspectj.AspectJPointcutAdvisor#0,org.springframework.aop.aspectj.AspectJPointcutAdvisor#1,logPointCut]; root of factory hierarchy beanFactory 是： BeanDefinitionRegistry 的对象
+BeanDefinitionRegistryPostProcessor: org.springframework.context.annotation.internalConfigurationAnnotationProcessor
+org.springframework.context.annotation.internalConfigurationAnnotationProcessor BeanDefinitionRegistryPostProcessor 是： PriorityOrdered 的对象
+org.springframework.context.annotation.internalConfigurationAnnotationProcessor AOP 6666666666666666
+对象:org.springframework.context.annotation.ConfigurationClassPostProcessor@616ac46a  的类型是：class org.springframework.context.annotation.ConfigurationClassPostProcessor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a]
+org.springframework.context.support.ApplicationContextAwareProcessor
+class org.springframework.context.annotation.ConfigurationClassPostProcessor AOP 888888888888
+org.springframework.context.annotation.ConfigurationClassPostProcessor@616ac46a 是： BeanDefinitionRegistryPostProcessor
+reiterate阶段 BeanDefinitionRegistryPostProcessor: org.springframework.context.annotation.internalConfigurationAnnotationProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor@616ac46a 是： BeanFactoryPostProcessor
+BeanFactoryPostProcessor: org.springframework.context.annotation.internalConfigurationAnnotationProcessor
+none!!!
+invokeBeanFactoryPostProcessors 已注册14个bean定义： [calculator, logInterceptor, org.springframework.context.annotation.internalConfigurationAnnotationProcessor, org.springframework.context.annotation.internalAutowiredAnnotationProcessor, org.springframework.context.annotation.internalRequiredAnnotationProcessor, org.springframework.context.annotation.internalCommonAnnotationProcessor, org.springframework.context.event.internalEventListenerProcessor, org.springframework.context.event.internalEventListenerFactory, org.springframework.aop.config.internalAutoProxyCreator, org.springframework.aop.aspectj.AspectJPointcutAdvisor#0, org.springframework.aop.aspectj.AspectJPointcutAdvisor#1, logPointCut, org.springframework.context.annotation.ConfigurationClassPostProcessor.importAwareProcessor, org.springframework.context.annotation.ConfigurationClassPostProcessor.enhancedConfigurationProcessor]
+spring.aop.CalculatorImp
+spring.aop.LogInterceptor
+org.springframework.context.annotation.ConfigurationClassPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.context.event.EventListenerMethodProcessor
+org.springframework.context.event.DefaultEventListenerFactory
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJExpressionPointcut
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+environment
+systemProperties
+systemEnvironment
+org.springframework.context.annotation.internalConfigurationAnnotationProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor.importRegistry
+BeanPostProcessor: org.springframework.context.annotation.internalAutowiredAnnotationProcessor
+BeanPostProcessor: org.springframework.context.annotation.internalRequiredAnnotationProcessor
+BeanPostProcessor: org.springframework.context.annotation.internalCommonAnnotationProcessor
+BeanPostProcessor: org.springframework.aop.config.internalAutoProxyCreator
+BeanPostProcessor: org.springframework.context.annotation.ConfigurationClassPostProcessor.importAwareProcessor
+BeanPostProcessor: org.springframework.context.annotation.ConfigurationClassPostProcessor.enhancedConfigurationProcessor
+org.springframework.context.annotation.internalAutowiredAnnotationProcessor 匹配 PriorityOrdered
+org.springframework.context.annotation.internalAutowiredAnnotationProcessor AOP 6666666666666666
+对象:org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1  的类型是：class org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+class org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor AOP 888888888888
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1是  MergedBeanDefinitionPostProcessor
+org.springframework.context.annotation.internalRequiredAnnotationProcessor 匹配 PriorityOrdered
+org.springframework.context.annotation.internalRequiredAnnotationProcessor AOP 6666666666666666
+对象:org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f  的类型是：class org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+class org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor AOP 888888888888
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f是  MergedBeanDefinitionPostProcessor
+org.springframework.context.annotation.internalCommonAnnotationProcessor 匹配 PriorityOrdered
+org.springframework.context.annotation.internalCommonAnnotationProcessor AOP 6666666666666666
+对象:org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df  的类型是：class org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+class org.springframework.context.annotation.CommonAnnotationBeanPostProcessor AOP 888888888888
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df是  MergedBeanDefinitionPostProcessor
+org.springframework.aop.config.internalAutoProxyCreator 匹配 Ordered
+org.springframework.context.annotation.ConfigurationClassPostProcessor.importAwareProcessor 匹配 PriorityOrdered
+org.springframework.context.annotation.ConfigurationClassPostProcessor.importAwareProcessor AOP 6666666666666666
+对象:org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c  的类型是：class org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+class org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor AOP 888888888888
+org.springframework.context.annotation.ConfigurationClassPostProcessor.enhancedConfigurationProcessor 匹配 PriorityOrdered
+org.springframework.context.annotation.ConfigurationClassPostProcessor.enhancedConfigurationProcessor AOP 6666666666666666
+对象:org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14  的类型是：class org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+class org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor AOP 888888888888
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c 是： BeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14 是： BeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df 是： BeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1 是： BeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f 是： BeanPostProcessor
+org.springframework.aop.config.internalAutoProxyCreator AOP 6666666666666666
+对象:proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false  的类型是：class org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+class org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator AOP 888888888888
+proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false 是： BeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df 是： BeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1 是： BeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f 是： BeanPostProcessor
+registerBeanPostProcessors 已注册14个bean定义： [calculator, logInterceptor, org.springframework.context.annotation.internalConfigurationAnnotationProcessor, org.springframework.context.annotation.internalAutowiredAnnotationProcessor, org.springframework.context.annotation.internalRequiredAnnotationProcessor, org.springframework.context.annotation.internalCommonAnnotationProcessor, org.springframework.context.event.internalEventListenerProcessor, org.springframework.context.event.internalEventListenerFactory, org.springframework.aop.config.internalAutoProxyCreator, org.springframework.aop.aspectj.AspectJPointcutAdvisor#0, org.springframework.aop.aspectj.AspectJPointcutAdvisor#1, logPointCut, org.springframework.context.annotation.ConfigurationClassPostProcessor.importAwareProcessor, org.springframework.context.annotation.ConfigurationClassPostProcessor.enhancedConfigurationProcessor]
+spring.aop.CalculatorImp
+spring.aop.LogInterceptor
+org.springframework.context.annotation.ConfigurationClassPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.context.event.EventListenerMethodProcessor
+org.springframework.context.event.DefaultEventListenerFactory
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJExpressionPointcut
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+environment
+systemProperties
+systemEnvironment
+org.springframework.context.annotation.internalConfigurationAnnotationProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor.importRegistry
+org.springframework.context.annotation.internalAutowiredAnnotationProcessor
+org.springframework.context.annotation.internalRequiredAnnotationProcessor
+org.springframework.context.annotation.internalCommonAnnotationProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor.importAwareProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor.enhancedConfigurationProcessor
+org.springframework.aop.config.internalAutoProxyCreator
+(inner bean)#1115ec15 AOP 6666666666666666
+对象:org.springframework.aop.aspectj.AspectJMethodBeforeAdvice: advice method [public void spring.aop.LogInterceptor.before()]; aspect name 'logInterceptor'  的类型是：class org.springframework.aop.aspectj.AspectJMethodBeforeAdvice
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f, org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector@141e5bef]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector
+class org.springframework.aop.aspectj.AspectJMethodBeforeAdvice AOP 888888888888
+org.springframework.aop.aspectj.AspectJPointcutAdvisor#0 AOP 6666666666666666
+对象:org.springframework.aop.aspectj.AspectJPointcutAdvisor@4f74980d  的类型是：class org.springframework.aop.aspectj.AspectJPointcutAdvisor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f, org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector@141e5bef]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector
+class org.springframework.aop.aspectj.AspectJPointcutAdvisor AOP 888888888888
+(inner bean)#10b9db7b AOP 6666666666666666
+对象:org.springframework.aop.aspectj.AspectJAfterAdvice: advice method [public void spring.aop.LogInterceptor.after()]; aspect name 'logInterceptor'  的类型是：class org.springframework.aop.aspectj.AspectJAfterAdvice
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f, org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector@141e5bef]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector
+class org.springframework.aop.aspectj.AspectJAfterAdvice AOP 888888888888
+org.springframework.aop.aspectj.AspectJPointcutAdvisor#1 AOP 6666666666666666
+对象:org.springframework.aop.aspectj.AspectJPointcutAdvisor@4f74980d  的类型是：class org.springframework.aop.aspectj.AspectJPointcutAdvisor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f, org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector@141e5bef]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector
+class org.springframework.aop.aspectj.AspectJPointcutAdvisor AOP 888888888888
+calculator AOP 6666666666666666
+对象:spring.aop.CalculatorImp@232a7d73  的类型是：class spring.aop.CalculatorImp
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f, org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector@141e5bef]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.aop.framework.autoproxy.AbstractAutoProxyCreator.postProcessAfterInitialization(Object bean, String beanName) 
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector
+class com.sun.proxy.$Proxy23 AOP 888888888888
+logInterceptor AOP 6666666666666666
+对象:spring.aop.LogInterceptor@50ecde95  的类型是：class spring.aop.LogInterceptor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f, org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector@141e5bef]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector
+class spring.aop.LogInterceptor AOP 888888888888
+org.springframework.context.event.internalEventListenerProcessor AOP 6666666666666666
+对象:org.springframework.context.event.EventListenerMethodProcessor@45815ffc  的类型是：class org.springframework.context.event.EventListenerMethodProcessor
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f, org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector@141e5bef]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector
+class org.springframework.context.event.EventListenerMethodProcessor AOP 888888888888
+org.springframework.context.event.internalEventListenerFactory AOP 6666666666666666
+对象:org.springframework.context.event.DefaultEventListenerFactory@732f29af  的类型是：class org.springframework.context.event.DefaultEventListenerFactory
+BeanPostProcessor列表: [org.springframework.context.support.ApplicationContextAwareProcessor@67b9b51a, org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker@10f7f7de, org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor@418c5a9c, org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor@18e36d14, proxyTargetClass=false; optimize=false; opaque=false; exposeProxy=false; frozen=false, org.springframework.context.annotation.CommonAnnotationBeanPostProcessor@5a5338df, org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor@11f0a5a1, org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor@73a8da0f, org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector@141e5bef]
+org.springframework.context.support.ApplicationContextAwareProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.support.PostProcessorRegistrationDelegate$ApplicationListenerDetector
+class org.springframework.context.event.DefaultEventListenerFactory AOP 888888888888
+finishBeanFactoryInitialization 已注册14个bean定义： [calculator, logInterceptor, org.springframework.context.annotation.internalConfigurationAnnotationProcessor, org.springframework.context.annotation.internalAutowiredAnnotationProcessor, org.springframework.context.annotation.internalRequiredAnnotationProcessor, org.springframework.context.annotation.internalCommonAnnotationProcessor, org.springframework.context.event.internalEventListenerProcessor, org.springframework.context.event.internalEventListenerFactory, org.springframework.aop.config.internalAutoProxyCreator, org.springframework.aop.aspectj.AspectJPointcutAdvisor#0, org.springframework.aop.aspectj.AspectJPointcutAdvisor#1, logPointCut, org.springframework.context.annotation.ConfigurationClassPostProcessor.importAwareProcessor, org.springframework.context.annotation.ConfigurationClassPostProcessor.enhancedConfigurationProcessor]
+spring.aop.CalculatorImp
+spring.aop.LogInterceptor
+org.springframework.context.annotation.ConfigurationClassPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.context.event.EventListenerMethodProcessor
+org.springframework.context.event.DefaultEventListenerFactory
+org.springframework.aop.aspectj.autoproxy.AspectJAwareAdvisorAutoProxyCreator
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJPointcutAdvisor
+org.springframework.aop.aspectj.AspectJExpressionPointcut
+org.springframework.context.annotation.ConfigurationClassPostProcessor$ImportAwareBeanPostProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor$EnhancedConfigurationBeanPostProcessor
+environment
+systemProperties
+systemEnvironment
+org.springframework.context.annotation.internalConfigurationAnnotationProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor.importRegistry
+org.springframework.context.annotation.internalAutowiredAnnotationProcessor
+org.springframework.context.annotation.internalRequiredAnnotationProcessor
+org.springframework.context.annotation.internalCommonAnnotationProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor.importAwareProcessor
+org.springframework.context.annotation.ConfigurationClassPostProcessor.enhancedConfigurationProcessor
+org.springframework.aop.config.internalAutoProxyCreator
+messageSource
+applicationEventMulticaster
+org.springframework.aop.aspectj.AspectJPointcutAdvisor#0
+org.springframework.aop.aspectj.AspectJPointcutAdvisor#1
+calculator
+logInterceptor
+org.springframework.context.event.internalEventListenerProcessor
+org.springframework.context.event.internalEventListenerFactory
+对象类型： class com.sun.proxy.$Proxy23
+login start!
+add 方法执行了 ----> 23
+login end!
+
+
+
+
+ System.out.println("pointcut id:" +id+", expression表达式："+expression);
+String[] beanNames = parserContext.getRegistry().getBeanDefinitionNames();
+			System.out.println("已注册的bean定义： "+Arrays.asList(beanNames));
+			//遍历IoC中BeanDefinition
+		     Arrays.stream(beanNames).forEach(x -> System.out.println(beanFactory.getBeanDefinition(x).getBeanClassName()));
+
+String[] beanNames = beanFactory.getBeanDefinitionNames();
+			String[] singletonObjects = beanFactory.getSingletonNames();
+			//遍历IoC中BeanDefinition
+		    Arrays.stream(beanNames).forEach(x -> System.out.println(beanFactory.getBeanDefinition(x).getBeanClassName()));
+		    Arrays.stream(singletonObjects).forEach(x -> System.out.println(x));
+		    	    beanFactoryPostProcessors.forEach(item->{System.out.println("BeanFactoryPostProcessor: "+item);});
+
+AspectJMethodBeforeAdvice，AspectJAfterAdvice，
+AspectJAfterReturningAdvice，AspectJAfterThrowingAdvice
+AspectJAroundAdvice
+
+AspectJPointcutAdvisor
+AspectJExpressionPointcut
+
+new AspectComponentDefinition(aspectId, beanDefArray, beanRefArray, source)
+new PointcutComponentDefinition(pointcutBeanName, pointcutDefinition, expression)
+
+org.springframework.aop.aspectj.AspectJPointcutAdvisor@6d7fc27
+org.springframework.aop.aspectj.AspectJMethodBeforeAdvice: advice method [public void spring.aop.LogInterceptor.before()]; aspect name 'logInterceptor'
+ComposablePointcut: AspectJExpressionPointcut: () execution(* spring.aop.CalculatorImp.*(..)), org.springframework.aop.support.MethodMatchers$IntersectionMethodMatcher@f78f08d5
+
+
+/**
+	 * Gets the advice implementation class corresponding to the supplied {@link Element}.
+	 */
+	private Class<?> getAdviceClass(Element adviceElement, ParserContext parserContext) {
+		String elementName = parserContext.getDelegate().getLocalName(adviceElement);
+		if (BEFORE.equals(elementName)) {
+			return AspectJMethodBeforeAdvice.class;
+		}
+		else if (AFTER.equals(elementName)) {
+			return AspectJAfterAdvice.class;
+		}
+		else if (AFTER_RETURNING_ELEMENT.equals(elementName)) {
+			return AspectJAfterReturningAdvice.class;
+		}
+		else if (AFTER_THROWING_ELEMENT.equals(elementName)) {
+			return AspectJAfterThrowingAdvice.class;
+		}
+		else if (AROUND.equals(elementName)) {
+			return AspectJAroundAdvice.class;
+		}
+		else {
+			throw new IllegalArgumentException("Unknown advice kind [" + elementName + "].");
+		}
+	}
+	
+	ClassPathBeanDefinitionScanner
+	
+	//注册公共性BeanDefinition(org.springframework.context.annotation.ConfigurationClassPostProcessor
+org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
+org.springframework.beans.factory.annotation.RequiredAnnotationBeanPostProcessor
+org.springframework.context.annotation.CommonAnnotationBeanPostProcessor
+org.springframework.context.event.EventListenerMethodProcessor
+org.springframework.context.event.DefaultEventListenerFactory,可选PersistenceAnnotationBeanPostProcessor)
+	
+	BeanDefinition org.springframework.beans.factory.xml.BeanDefinitionParserDelegate.parseCustomElement(Element ele, BeanDefinition containingBd)
+	BeanDefinition org.springframework.context.annotation.ComponentScanBeanDefinitionParser.parse(Element element, ParserContext parserContext)
+
+	void org.springframework.context.annotation.ComponentScanBeanDefinitionParser.registerComponents(XmlReaderContext readerContext, Set<BeanDefinitionHolder> beanDefinitions, Element element)
+	Set<BeanDefinitionHolder> org.springframework.context.annotation.AnnotationConfigUtils.registerAnnotationConfigProcessors(BeanDefinitionRegistry registry, Object source)
+	
+	public class AnnotationConfigUtils {
+
+	/**
+	 * The bean name of the internally managed Configuration annotation processor.
+	 */
+	public static final String CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME =
+			"org.springframework.context.annotation.internalConfigurationAnnotationProcessor";
+
+	/**
+	 * The bean name of the internally managed BeanNameGenerator for use when processing
+	 * {@link Configuration} classes. Set by {@link AnnotationConfigApplicationContext}
+	 * and {@code AnnotationConfigWebApplicationContext} during bootstrap in order to make
+	 * any custom name generation strategy available to the underlying
+	 * {@link ConfigurationClassPostProcessor}.
+	 * @since 3.1.1
+	 */
+	public static final String CONFIGURATION_BEAN_NAME_GENERATOR =
+			"org.springframework.context.annotation.internalConfigurationBeanNameGenerator";
+
+	/**
+	 * The bean name of the internally managed Autowired annotation processor.
+	 */
+	public static final String AUTOWIRED_ANNOTATION_PROCESSOR_BEAN_NAME =
+			"org.springframework.context.annotation.internalAutowiredAnnotationProcessor";
+
+	/**
+	 * The bean name of the internally managed Required annotation processor.
+	 */
+	public static final String REQUIRED_ANNOTATION_PROCESSOR_BEAN_NAME =
+			"org.springframework.context.annotation.internalRequiredAnnotationProcessor";
+
+	/**
+	 * The bean name of the internally managed JSR-250 annotation processor.
+	 */
+	public static final String COMMON_ANNOTATION_PROCESSOR_BEAN_NAME =
+			"org.springframework.context.annotation.internalCommonAnnotationProcessor";
+
+	/**
+	 * The bean name of the internally managed JPA annotation processor.
+	 */
+	public static final String PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME =
+			"org.springframework.context.annotation.internalPersistenceAnnotationProcessor";
+
+
+	private static final String PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME =
+			"org.springframework.orm.jpa.support.PersistenceAnnotationBeanPostProcessor";
+
+	/**
+	 * The bean name of the internally managed @EventListener annotation processor.
+	 */
+	public static final String EVENT_LISTENER_PROCESSOR_BEAN_NAME =
+			"org.springframework.context.event.internalEventListenerProcessor";
+
+	/**
+	 * The bean name of the internally managed EventListenerFactory.
+	 */
+	public static final String EVENT_LISTENER_FACTORY_BEAN_NAME =
+			"org.springframework.context.event.internalEventListenerFactory";
+
+	private static final boolean jsr250Present =
+			ClassUtils.isPresent("javax.annotation.Resource", AnnotationConfigUtils.class.getClassLoader());
+
+	private static final boolean jpaPresent =
+			ClassUtils.isPresent("javax.persistence.EntityManagerFactory", AnnotationConfigUtils.class.getClassLoader()) &&
+			ClassUtils.isPresent(PERSISTENCE_ANNOTATION_PROCESSOR_CLASS_NAME, AnnotationConfigUtils.class.getClassLoader());
+	
+	org.springframework.aop.framework.autoproxy.AbstractAdvisorAutoProxyCreator$BeanFactoryAdvisorRetrievalHelperAdapter@232a7d73
+[org.springframework.aop.aspectj.AspectJPointcutAdvisor#0, org.springframework.aop.aspectj.AspectJPointcutAdvisor#1]
+[org.springframework.aop.aspectj.AspectJPointcutAdvisor@6d7fc27, org.springframework.aop.aspectj.AspectJPointcutAdvisor@6d7fc27]
+java.util.LinkedList$Node@33b1c5c5
+org.springframework.aop.aspectj.AspectJPointcutAdvisor@6d7fc27
+org.springframework.aop.aspectj.AspectJMethodBeforeAdvice: advice method [public void spring.aop.LogInterceptor.before()]; aspect name 'logInterceptor'
+null
+null
+false
+org.springframework.aop.config.SimpleBeanFactoryAwareAspectInstanceFactory@4b41e4dd
+public void spring.aop.LogInterceptor.before()
+logInterceptor
+7
+class spring.aop.LogInterceptor
+null
+class java.lang.Object
+class java.lang.Object
+-1
+-1
+before
+[]
+AspectJExpressionPointcut: () execution(* spring.aop.CalculatorImp.*(..))
+null
+null
+null
+ComposablePointcut: AspectJExpressionPointcut: () execution(* spring.aop.CalculatorImp.*(..)), org.springframework.aop.support.MethodMatchers$IntersectionMethodMatcher@f78f08d5
+AspectJExpressionPointcut: () execution(* spring.aop.CalculatorImp.*(..))
+org.springframework.aop.support.MethodMatchers$IntersectionMethodMatcher@f78f08d5
+org.springframework.aop.aspectj.AbstractAspectJAdvice$AdviceExcludingMethodMatcher@b5111031
+AspectJExpressionPointcut: () execution(* spring.aop.CalculatorImp.*(..))
+java.util.LinkedList$Node@4372b9b6
+org.springframework.aop.aspectj.AspectJPointcutAdvisor@6d7fc27
+null
+java.util.LinkedList$Node@33b1c5c5
+null
+java.util.LinkedList$Node@4372b9b6
+2
+2		
