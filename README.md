@@ -10,7 +10,9 @@ java及相关
 4. [Java Tutorial](https://www.w3spoint.com/java-tutorial)
 1. [Java Goal(Set your goal today!)](https://javagoal.com/)
 1. [Instance Of Java](http://www.instanceofjava.com/)
-1. [java learn ]https://www.java67.com/)
+1. [java learn ](https://www.java67.com/)
+1. [java javabeat ](https://javabeat.net/)
+
 1. [javarevisited.blogspot](https://javarevisited.blogspot.com)
 1. [JavaMadeSoEasy.com (JMSE) ](https://www.javamadesoeasy.com/)
 1. [Core java](https://www.codejava.net/)
