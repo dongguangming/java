@@ -1,0 +1,29 @@
+[Unit]
+
+Description=The redis-server Process Manager
+
+After=syslog.target
+
+After=network.target
+
+ 
+
+[Service]
+
+Type=forking
+
+ExecStart=/dgm/redis/src/redis-server  /dgm/redis/redis.conf        
+
+ExecReload=/bin/kill -USR2 $MAINPID
+
+ExecStop=/bin/kill -SIGINT $MAINPID
+
+Restart=always
+
+PrivateTmp=true
+
+ 
+
+[Install]
+
+WantedBy=multi-user.target
