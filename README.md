@@ -35,7 +35,7 @@ java及相关
 4. [Java theory and practice](https://developer.ibm.com/series/java-theory-and-practice/#about-this-series)
 4. [Effective Java SE](https://mohamed-taman.github.io/Effective-Java-SE/#/)
 4. [JavaSpecialists](https://www.javaspecialists.eu/archive/archive.jsp)
-4. []()
+4. [Aleksey Shipilëv: One Stop Page](https://shipilev.net/)
 4. []()
 4. []()
 4. []()
