@@ -60,7 +60,7 @@ java及相关
 4. [Tired of Null Pointer Exceptions? Consider Using Java SE 8's "Optional"!](https://www.oracle.com/technical-resources/articles/java/java8-optional.html)
 4. [The Java Optional class: 11 more recipes for preventing null pointer exceptions](https://blogs.oracle.com/javamagazine/the-java-optional-class-11-more-recipes-for-preventing-null-pointer-exceptions)
 4. [Analyzing Thread Dumps in Middleware - Part 1](https://www.ateam-oracle.com/analyzing-thread-dumps-in-middleware-part-1-2)
-4. []()
+4. [Deserialization of untrusted data](https://owasp.org/www-community/vulnerabilities/Deserialization_of_untrusted_data#)
 4. []()
 4. []()
 4. []()
