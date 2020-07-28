@@ -228,8 +228,7 @@ java及相关
 4. [Real-time streaming with Kafka, Logstash and Spark](http://blogs.quovantis.com/real-time-streaming-with-kafka-logstash-and-spark/)
 4. [Lambda Architecture with Kafka, ElasticSearch and Spark (Streaming)](https://www.niceideas.ch/roller2/badtrash/entry/lambda-architecture-with-kafka-elasticsearch)
 4. [KAFKA => SPARKSTREAMING => ELASTIC](https://hadoopist.wordpress.com/2016/06/17/kafka-sparkstreaming-elastic/)
-4. [Spark 实战, 第 2 部分:使用 Kafka 和 Spark Streaming 构建实时数据处理系统
-](https://developer.ibm.com/zh/articles/os-cn-spark-practice2/)
+4. [Spark 实战, 第 2 部分:使用 Kafka 和 Spark Streaming 构建实时数据处理系统](https://developer.ibm.com/zh/articles/os-cn-spark-practice2/)
 4. [a-practical-streaming-data-infrastructure-case-with-fluentd-kafka-kafka-connect-elasticsearch](https://medium.com/@emmano3h/a-practical-streaming-data-infrastructure-case-with-fluentd-kafka-kafka-connect-elasticsearch-31609a149563)
 4. [Build a recommender with Apache Spark and Elasticsearch](https://developer.ibm.com/technologies/data-science/patterns/build-a-recommender-with-apache-spark-and-elasticsearch/)
 4. [Building a Cluster Using Elasticsearch, Kibana, Zookeeper, Kafka and Rsyslog](https://dev.to/guthakiran/building-a-cluster-using-elasticsearch-kibana-zookeeper-kafka-and-rsyslog-17ja)
