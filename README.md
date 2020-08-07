@@ -1,7 +1,7 @@
 # java
 java及相关
 
-#学习java网站链接
+# 学习java网站链接
 1. [Java Is the Language of Possibilities](https://www.oracle.com/java/technologies/)
 1. [The Java™ Tutorials](https://docs.oracle.com/javase/tutorial/)
 4. [Java Development, Better and Faster](https://developer.oracle.com/java/)
@@ -164,6 +164,7 @@ java及相关
 2. [This Week in Spring - June 30th, 2020](https://spring.io/blog/2020/07/01/this-week-in-spring-june-30th-2020)
 4. [Spring Boot Tutorial](https://www.springboottutorial.com/spring-boot-video-tutorials-for-beginners)
 4. [Spring Framework Tutorials](https://www.logicbig.com/tutorials/spring-framework.html)
+4. [spring-component-scan](https://springframework.guru/spring-component-scan/)
 4. [Source Code Analysis of Spring Boot and Spring MVC Integrated Startup Process](https://laptrinhx.com/source-code-analysis-of-spring-boot-and-spring-mvc-integrated-startup-process-1207980585/)
 4. [In-depth source code analysis SpringAOP implementation principle](https://www.programmersought.com/article/7735361531/)
 4. [Spring Boot Application Events Explained](https://reflectoring.io/spring-boot-application-events-explained/)
@@ -231,10 +232,11 @@ Networking (O'Reilly)](https://hpbn.co/websocket/)
 4. [Chapter 4. STOMP over WebSocket](https://www.oreilly.com/library/view/websocket/9781449369262/ch04.html)
 4. [STOMP Over WebSocket](http://jmesnil.net/stomp-websocket/doc/)
 4. [Write integration tests for your Spring WebSocket endpoints](https://rieckpil.de/write-integration-tests-for-your-spring-websocket-endpoints/)
-4. []()
-4. []()
-4. []()
-4. []()
+4. [Spring Cloud Netflix - Eureka + Zuul](https://ratseno.tistory.com/m/63)
+4. [[Kafka][Java][SpringBoot][SpringCloudStream]Spring Cloud Stream 사용하기](https://kamang-it.tistory.com/m/entry/KafkaJavaSpringBootSpringCloudStreamSpring-Cloud-Stream-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0-1)
+4. [Spring Annotations Cheat Sheet](https://www.jrebel.com/blog/spring-annotations-cheat-sheet)
+4. [redis-kafka-or-rabbitmq-which-microservices-message-broker-to-choose](https://otonomo.io/blog/redis-kafka-or-rabbitmq-which-microservices-message-broker-to-choose/)
+4. [使用SpringBoot和Redis的Geo功能获取当前位置方圆一公里的坐标点](https://www.codepeople.cn/2020/07/17/SpringBoot2.x-Redis-Geo/)
 4. []()
 4. []()
 4. []()
