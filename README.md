@@ -21,6 +21,7 @@ java及相关
 2. [CodesJavaEasy learning with example program codes](https://codesjava.com/)
 3. [java world](https://www.javaworld.com/)
 4. [https://huongdanjava.com/](https://huongdanjava.com/)
+4. [Java API Guides - Java Core Packages API Guides](https://www.javaguides.net/p/java-api-guides-java-core-packages-api.html?spref=tw&m=1)
 4. [Java Tutorial, Java EE Tutorials](https://www.journaldev.com/java-tutorial-java-ee-tutorials)
 4. [programming.vip java](https://programming.vip/keywords/java)
 4. [programmer.help java](https://programmer.help/tags/java)
