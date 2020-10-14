@@ -167,6 +167,7 @@ java及相关
 4. [Spring Boot Tutorial](https://www.springboottutorial.com/spring-boot-video-tutorials-for-beginners)
 4. [Spring Framework Tutorials](https://www.logicbig.com/tutorials/spring-framework.html)
 4. [Spring Component Scan](https://springframework.guru/spring-component-scan/)
+4. [java - the - Difference between<context:annotation-config> vs<context:component-scan>](https://code.i-harness.com/en/q/71240a)
 4. [Using the Spring @RequestMapping Annotation](https://springframework.guru/spring-requestmapping-annotation/)
 4. [Source Code Analysis of Spring Boot and Spring MVC Integrated Startup Process](https://laptrinhx.com/source-code-analysis-of-spring-boot-and-spring-mvc-integrated-startup-process-1207980585/)
 4. [In-depth source code analysis SpringAOP implementation principle](https://www.programmersought.com/article/7735361531/)
