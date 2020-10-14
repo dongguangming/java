@@ -151,7 +151,7 @@ java及相关
 4. [Java Concurrency: Understanding Thread Pool and Executors](https://www.codejava.net/java-core/concurrency/java-concurrency-understanding-thread-pool-and-executors)
 4. [Thread pools and work queues](https://www.ibm.com/developerworks/library/j-jtp0730/index.html)
 4. [Executor, ExecutorService and Thread pools](https://java.programmingpedia.net/en/tutorial/143/executor-executorservice-and-thread-pools)
-4. []()
+4. [How to read properties files in Java](https://www.techiedelight.com/read-properties-files-java/)
 4. []()
 4. []()
 4. []()
