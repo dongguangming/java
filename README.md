@@ -199,8 +199,6 @@ java及相关
 6. [Let's code a TCP/IP stack, 1: Ethernet & ARP](https://www.saminiir.com/lets-code-tcp-ip-stack-1-ethernet-arp/)
 7. [TCPDump Capture HTTP GET/POST requests](https://www.middlewareinventory.com/blog/tcpdump-capture-http-get-post-requests-apache-weblogic-websphere/?fbclid=IwAR1XUSwsl5fIqdU2wKPRUfiTbUnpKV9qmVLhzL0KezXvdtECUdakJujP5tw)
 8. [Understanding TCP/IP Network Stack & Writing Network Apps](https://www.cubrid.org/blog/3826497)
-
-=======
 4. [from 0 to 1! Dynamic and static agent](https://laptrinhx.com/from-0-to-1-dynamic-and-static-agent-2093212060/)
 4. []()
 4. []()
