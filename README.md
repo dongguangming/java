@@ -156,7 +156,7 @@ java及相关
 4. [Executor, ExecutorService and Thread pools](https://java.programmingpedia.net/en/tutorial/143/executor-executorservice-and-thread-pools)
 4. [How to read properties files in Java](https://www.techiedelight.com/read-properties-files-java/)
 4. [Java File IO: Modern APIs to Create, Read, Write & More](https://www.marcobehler.com/guides/java-files)
-4. []()
+4. [from 0 to 1! Dynamic and static agent](https://laptrinhx.com/from-0-to-1-dynamic-and-static-agent-2093212060/)
 4. []()
 4. []()
 4. []()
