@@ -21,3 +21,7 @@ event-sourcing/Journal.json
 *.gif
 *.java
 J2EEPatterns
+*.TXT
+generics_and_collections_code
+*.MF
+*.c
