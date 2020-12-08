@@ -168,7 +168,6 @@ java及相关
 4. [Executor, ExecutorService and Thread pools](https://java.programmingpedia.net/en/tutorial/143/executor-executorservice-and-thread-pools)
 4. [How to read properties files in Java](https://www.techiedelight.com/read-properties-files-java/)
 4. [Java File IO: Modern APIs to Create, Read, Write & More](https://www.marcobehler.com/guides/java-files)
-<<<<<<< HEAD
 4. [Creating a Simple Java TCP/IP Server and Client Socket](https://www.pegaxchange.com/2017/12/07/simple-tcp-ip-server-client-java/)
 4. [java TCP Sockets](https://users.cs.fiu.edu/~czhang/teaching/cen4500/project/TCP_Sockets.htm)
 4. [Network Programming with the java.net Package](http://aelinik.free.fr/javaguide/CH17.HTM)
@@ -209,7 +208,6 @@ java及相关
 4. []()
 4. []()
 4. []()
->>>>>>> 4c46ff602733cadb247b0ff3e16fa889c0e4afa3
 
 ### Spring学习
 4. [spring官网](https://spring.io/)
