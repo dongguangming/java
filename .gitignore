@@ -18,10 +18,28 @@ datanucleus.log
 *.log
 event-sourcing/Journal.json
 *.html
+*.xml
 *.gif
 *.java
+*.jsp
+JavaNetCode
 J2EEPatterns
+Kubernetes+Docker+Istio
+JAVA�߳� (�ڶ���O'Reilly)
 *.TXT
 generics_and_collections_code
 *.MF
 *.c
+/JAVA线程 (第二版O'Reilly)
+
+
+/*.bak
+
+/spring/Spring 5 Design Patterns.pdf
+J2EE
+
+/Struts-Hibernate/struts-2.5.2-all.zip
+
+/XML/XML入门经典(第4版).pdf
+
+/java多线程设计模式/java多线程设计模式.pdf
