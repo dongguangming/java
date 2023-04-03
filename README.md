@@ -59,8 +59,7 @@ java及相关
 4. [The Java Version Almanac](https://javaalmanac.io/?fbclid=IwAR1k8HEte5094-1wkDl1R93K1GOGXGjGgQ7hJy28oHtfm2zVNaTrvxElcOQ)
 4. [Introduction to Threads](https://prismoskills.appspot.com/lessons/Multithreading_in_Java/Chapter_01_-_Introduction.jsp)
 4. [Understanding how Core Java really works can help you write simpler, faster applications.](https://vanillajava.blogspot.com/)
-4. []()
-4. []()
+4. [Java tutorial for Testers](https://artoftesting.com/java-for-testers)
 4. [The Best of Java Interview Questions](https://dzone.com/articles/interview-question-cluster)
 4. [Java Performance Tuning](https://www.javaperformancetuning.com/)
 
